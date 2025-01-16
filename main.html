@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        #log {
+            margin-top: 20px;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Poker Tracker</h1>
+        <div class="form-group">
+            <label for="initial-buy-in">Initial Buy In</label>
+            <input type="number" id="initial-buy-in" placeholder="Enter initial buy in">
+        </div>
+        <div class="form-group">
+            <label for="player-name">Add Player</label>
+            <input type="text" id="player-name" placeholder="Enter player name">
+            <button id="add-player">Add Player</button>
+        </div>
+        <button id="reset-game">Reset Game</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th>Total Buy Ins</th>
+                    <th>Total Buy Outs</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="player-list">
+                <!-- Players will be added here dynamically -->
+            </tbody>
+        </table>
+        <p><strong>Total Money in Circulation:</strong> ₹<span id="total-money">0</span></p>
+        <div id="log">
+            <h3>Change Log</h3>
+            <div id="log-entries"></div>
+        </div>
+    </div>
+    <script>
+        const initialBuyInInput = document.getElementById('initial-buy-in');
+        const playerNameInput = document.getElementById('player-name');
+        const addPlayerButton = document.getElementById('add-player');
+        const resetGameButton = document.getElementById('reset-game');
+        const playerList = document.getElementById('player-list');
+        const totalMoneySpan = document.getElementById('total-money');
+        const logEntries = document.getElementById('log-entries');
+
+        let players = JSON.parse(localStorage.getItem('players')) || [];
+        let initialBuyIn = parseInt(localStorage.getItem('initialBuyIn')) || 0;
+        let logs = JSON.parse(localStorage.getItem('logs')) || [];
+
+        const updateLocalStorage = () => {
+            localStorage.setItem('players', JSON.stringify(players));
+            localStorage.setItem('initialBuyIn', initialBuyIn);
+            localStorage.setItem('logs', JSON.stringify(logs));
+        };
+
+        const addLog = (message) => {
+            const timestamp = new Date().toLocaleString();
+            const logEntry = `${timestamp}: ${message}`;
+            logs.push(logEntry);
+            const entryElement = document.createElement('div');
+            entryElement.textContent = logEntry;
+            entryElement.className = 'log-entry';
+            logEntries.appendChild(entryElement);
+            logEntries.scrollTop = logEntries.scrollHeight;
+            updateLocalStorage();
+        };
+
+        const updateUI = () => {
+            playerList.innerHTML = '';
+            logEntries.innerHTML = '';
+            logs.forEach(log => {
+                const entryElement = document.createElement('div');
+                entryElement.textContent = log;
+                entryElement.className = 'log-entry';
+                logEntries.appendChild(entryElement);
+            });
+
+            let totalMoney = 0;
+
+            players.forEach((player, index) => {
+                const row = document.createElement('tr');
+                totalMoney += player.buyIns - player.buyOuts;
+
+                row.innerHTML = `
+                    <td>${player.name}</td>
+                    <td>₹${player.buyIns}</td>
+                    <td>₹${player.buyOuts}</td>
+                    <td>
+                        <button onclick="addBuyIn(${index})">+ Buy In</button>
+                        <button onclick="addBuyOut(${index})">+ Buy Out</button>
+                    </td>
+                `;
+                playerList.appendChild(row);
+            });
+
+            totalMoneySpan.textContent = totalMoney;
+            updateLocalStorage();
+        };
+
+        const addBuyIn = (index) => {
+            const amount = parseInt(prompt(`Enter buy in amount for ${players[index].name}:`));
+            if (!isNaN(amount) && amount > 0) {
+                players[index].buyIns += amount;
+                addLog(`${players[index].name} added a buy in of ₹${amount}`);
+                updateUI();
+            }
+        };
+
+        const addBuyOut = (index) => {
+            const amount = parseInt(prompt(`Enter buy out amount for ${players[index].name}:`));
+            if (!isNaN(amount) && amount > 0) {
+                players[index].buyOuts += amount;
+                addLog(`${players[index].name} added a buy out of ₹${amount}`);
+                updateUI();
+            }
+        };
+
+        addPlayerButton.addEventListener('click', () => {
+            const playerName = playerNameInput.value.trim();
+            if (playerName && initialBuyIn > 0) {
+                players.push({ name: playerName, buyIns: initialBuyIn, buyOuts: 0 });
+                addLog(`Added player: ${playerName} with initial buy in of ₹${initialBuyIn}`);
+                playerNameInput.value = '';
+                updateUI();
+            } else {
+                alert("Please enter a valid player name and set an initial buy in.");
+            }
+        });
+
+        initialBuyInInput.addEventListener('change', () => {
+            initialBuyIn = parseInt(initialBuyInInput.value) || 0;
+            addLog(`Initial buy in set to ₹${initialBuyIn}`);
+            updateLocalStorage();
+        });
+
+        resetGameButton.addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset the game?")) {
+                localStorage.clear();
+                players = [];
+                logs = [];
+                initialBuyIn = 0;
+                initialBuyInInput.value = '';
+                addLog("Game has been reset");
+                updateUI();
+            }
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
