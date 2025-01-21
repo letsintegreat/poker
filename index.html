@@ -101,7 +101,7 @@
                 </tr>
             </thead>
             <tbody id="player-list">
-                <!-- Players will be added here dynamically -->
+                <!-- Players and totals will be added dynamically -->
             </tbody>
         </table>
         <p><strong>Total Money in Circulation:</strong> ₹<span id="total-money">0</span></p>
@@ -151,42 +151,65 @@
                 logEntries.appendChild(entryElement);
             });
 
-            let totalMoney = 0;
+            let totalBuyIns = 0;
+            let totalBuyOuts = 0;
 
             players.forEach((player, index) => {
                 const row = document.createElement('tr');
-                totalMoney += player.buyIns - player.buyOuts;
+                totalBuyIns += player.buyIns;
+                totalBuyOuts += player.buyOuts;
 
                 row.innerHTML = `
                     <td>${player.name}</td>
                     <td>₹${player.buyIns}</td>
                     <td>₹${player.buyOuts}</td>
                     <td>
-                        <button onclick="addBuyIn(${index})">+ Buy In</button>
-                        <button onclick="addBuyOut(${index})">+ Buy Out</button>
+                        <button onclick="confirmBuyIn(${index})">+ Buy In</button>
+                        <button onclick="confirmBuyOut(${index})">+ Buy Out</button>
+                        <button onclick="addFinalChips(${index})">Add Final Chips</button>
                     </td>
                 `;
                 playerList.appendChild(row);
             });
 
+            // Adding the totals row
+            const totalsRow = document.createElement('tr');
+            totalsRow.style.fontWeight = 'bold';
+            totalsRow.style.backgroundColor = '#f4f4f9';
+            totalsRow.innerHTML = `
+                <td>Total</td>
+                <td>₹${totalBuyIns}</td>
+                <td>₹${totalBuyOuts}</td>
+                <td>-</td>
+            `;
+            playerList.appendChild(totalsRow);
+
+            const totalMoney = totalBuyIns - totalBuyOuts;
             totalMoneySpan.textContent = totalMoney;
             updateLocalStorage();
         };
 
-        const addBuyIn = (index) => {
-            const amount = parseInt(prompt(`Enter buy in amount for ${players[index].name}:`));
-            if (!isNaN(amount) && amount > 0) {
-                players[index].buyIns += amount;
-                addLog(`${players[index].name} added a buy in of ₹${amount}`);
+        const confirmBuyIn = (index) => {
+            if (confirm(`Add a buy in of ₹${initialBuyIn} for ${players[index].name}?`)) {
+                players[index].buyIns += initialBuyIn;
+                addLog(`${players[index].name} added a buy in of ₹${initialBuyIn}`);
                 updateUI();
             }
         };
 
-        const addBuyOut = (index) => {
-            const amount = parseInt(prompt(`Enter buy out amount for ${players[index].name}:`));
-            if (!isNaN(amount) && amount > 0) {
-                players[index].buyOuts += amount;
-                addLog(`${players[index].name} added a buy out of ₹${amount}`);
+        const confirmBuyOut = (index) => {
+            if (confirm(`Add a buy out of ₹${initialBuyIn} for ${players[index].name}?`)) {
+                players[index].buyOuts += initialBuyIn;
+                addLog(`${players[index].name} added a buy out of ₹${initialBuyIn}`);
+                updateUI();
+            }
+        };
+
+        const addFinalChips = (index) => {
+            const chips = parseInt(prompt(`Enter final chips for ${players[index].name}:`));
+            if (!isNaN(chips) && chips >= 0) {
+                players[index].buyOuts += chips;
+                addLog(`${players[index].name} added final chips of ₹${chips}`);
                 updateUI();
             }
         };
